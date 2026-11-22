@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lista de Mercado & Preços por Mercado</title>
+  <title>Lista de Mercado & Histórico de Preços</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -31,7 +31,7 @@
     }
 
     .container {
-      max-width: 920px;
+      max-width: 960px;
       margin: 0 auto;
     }
 
@@ -41,7 +41,7 @@
       gap: 12px;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     h1 {
@@ -68,7 +68,7 @@
     button {
       cursor: pointer;
       background: var(--card);
-      transition: opacity 0.15s, border-color 0.15s;
+      transition: opacity 0.15s, border-color 0.15s, background 0.15s;
     }
 
     button:hover {
@@ -79,6 +79,20 @@
       background: var(--accent);
       color: #062033;
       border: none;
+      font-weight: 600;
+    }
+
+    button.active-tab {
+      background: var(--accent);
+      color: #062033;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    button.active-subtab {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent);
+      color: #7dd3fc;
       font-weight: 600;
     }
 
@@ -105,11 +119,25 @@
       font-size: 0.82rem;
     }
 
+    .main-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sub-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
     .grid-forms {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .card {
@@ -205,6 +233,34 @@
       font-weight: 600;
     }
 
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .summary-total {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #86efac;
+    }
+
+    .top-products {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .top-products strong {
+      color: var(--text);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
     #status-bar {
       font-size: 0.85rem;
       color: var(--muted);
@@ -277,49 +333,79 @@
       </div>
     </header>
 
+    <div class="main-tabs">
+      <button id="tab-lista" class="active-tab" onclick="switchMainTab('lista')">Lista de Compras</button>
+      <button id="tab-historico" onclick="switchMainTab('historico')">Histórico / Preço</button>
+    </div>
+
     <div id="status-bar">A iniciar...</div>
 
-    <div class="grid-forms">
-      <div class="card" style="margin-bottom: 0;">
-        <h2>Adicionar Item</h2>
-        <form class="row-form" onsubmit="handleAddItem(event)">
-          <input id="new-item-name" type="text" placeholder="Ex.: leite, arroz..." required />
-          <input id="new-item-qty" type="number" min="1" value="1" style="width: 72px; flex: none;" />
-          <button type="submit" class="primary">+ Item</button>
-        </form>
+    <!-- ABA 1: LISTA DE COMPRAS -->
+    <div id="view-lista">
+      <div class="grid-forms">
+        <div class="card" style="margin-bottom: 0;">
+          <h2>Adicionar Item</h2>
+          <form class="row-form" onsubmit="handleAddItem(event)">
+            <input id="new-item-name" type="text" placeholder="Ex.: leite, arroz..." required />
+            <input id="new-item-qty" type="number" min="1" value="1" style="width: 72px; flex: none;" />
+            <button type="submit" class="primary">+ Item</button>
+          </form>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+          <h2>Novo Mercado (para seleção)</h2>
+          <form class="row-form" onsubmit="handleAddMarket(event)">
+            <input id="new-market-name" type="text" placeholder="Ex.: Continente, Mercadona..." required />
+            <button type="submit" class="primary">+ Mercado</button>
+          </form>
+        </div>
       </div>
 
-      <div class="card" style="margin-bottom: 0;">
-        <h2>Novo Mercado (para seleção)</h2>
-        <form class="row-form" onsubmit="handleAddMarket(event)">
-          <input id="new-market-name" type="text" placeholder="Ex.: Continente, Mercadona..." required />
-          <button type="submit" class="primary">+ Mercado</button>
-        </form>
+      <div class="card" style="margin-top: 16px;">
+        <h2>
+          <span>Por Comprar</span>
+          <span class="badge" id="count-unchecked">0</span>
+        </h2>
+        <div id="list-unchecked"></div>
+      </div>
+
+      <div class="card">
+        <h2>
+          <span>Comprados</span>
+          <span class="badge green" id="count-checked">0</span>
+        </h2>
+        <div id="list-checked"></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top: 16px;">
-      <h2>
-        <span>Por Comprar</span>
-        <span class="badge" id="count-unchecked">0</span>
-      </h2>
-      <div id="list-unchecked"></div>
-    </div>
-
-    <div class="card">
-      <h2>
-        <span>Comprados</span>
-        <span class="badge green" id="count-checked">0</span>
-      </h2>
-      <div id="list-checked"></div>
-    </div>
-
-    <div class="card">
-      <h2>📊 Produto × Preço por Mercado</h2>
-      <div class="item-meta" style="margin-bottom: 8px;">
-        Compara o valor registrado de cada produto por mercado. Comprar no mesmo mercado atualiza esse mercado; comprar noutro mantém o anterior e cria o novo.
+    <!-- ABA 2: HISTÓRICO / PREÇO -->
+    <div id="view-historico" class="hidden">
+      <div class="sub-tabs">
+        <button id="subtab-produtos" class="active-subtab" onclick="switchSubTab('produtos')">
+          Preços por Produto
+        </button>
+        <button id="subtab-mensal" onclick="switchSubTab('mensal')">
+          Gastos por Mês & Mercado
+        </button>
       </div>
-      <div id="price-comparison"></div>
+
+      <!-- SUB-ABA 1: AGRUPADO POR PRODUTO, ORDENADO POR NOME E DEPOIS POR PREÇO (MENOR -> MAIOR) -->
+      <div id="subview-produtos" class="card">
+        <h2>📊 Preços por Produto (Ordenado por Produto e Menor Preço)</h2>
+        <div class="item-meta" style="margin-bottom: 10px;">
+          Agrupado por produto (A–Z) e ordenado do menor para o maior preço por mercado.
+        </div>
+        <div id="price-comparison"></div>
+      </div>
+
+      <!-- SUB-ABA 2: VALOR TOTAL GASTO EM MERCADO POR MÊS + TOP 3 PRODUTOS MAIS COMPRADOS -->
+      <div id="subview-mensal" class="card hidden">
+        <h2>📅 Gastos por Mês & Mercado + Top 3 Produtos</h2>
+        <div class="item-meta" style="margin-bottom: 10px;">
+          Valor total gasto por mês e mercado, com os 3 produtos mais comprados em cada registo.
+        </div>
+        <div id="monthly-market-summary"></div>
+      </div>
     </div>
   </div>
 
@@ -378,6 +464,9 @@
       markets: [],
     };
 
+    let activeMainTab = "lista";
+    let activeSubTab = "produtos";
+
     function escapeHtml(str) {
       return String(str ?? "")
         .replace(/&/g, "&amp;")
@@ -393,10 +482,39 @@
       return n.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
     }
 
+    function formatMonthLabel(ym) {
+      // ym esperado no formato "YYYY-MM"
+      if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "Sem data";
+      const [year, month] = ym.split("-");
+      const date = new Date(Number(year), Number(month) - 1, 1);
+      const label = date.toLocaleDateString("pt-PT", { month: "long", year: "numeric" });
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
     function setStatus(msg, isError = false) {
       const el = document.getElementById("status-bar");
       el.textContent = msg;
       el.className = isError ? "error" : "";
+    }
+
+    function switchMainTab(tab) {
+      activeMainTab = tab;
+      document.getElementById("tab-lista").classList.toggle("active-tab", tab === "lista");
+      document.getElementById("tab-historico").classList.toggle("active-tab", tab === "historico");
+      document.getElementById("view-lista").classList.toggle("hidden", tab !== "lista");
+      document.getElementById("view-historico").classList.toggle("hidden", tab !== "historico");
+      if (tab === "historico") {
+        renderHistoricoViews();
+      }
+    }
+
+    function switchSubTab(subtab) {
+      activeSubTab = subtab;
+      document.getElementById("subtab-produtos").classList.toggle("active-subtab", subtab === "produtos");
+      document.getElementById("subtab-mensal").classList.toggle("active-subtab", subtab === "mensal");
+      document.getElementById("subview-produtos").classList.toggle("hidden", subtab !== "produtos");
+      document.getElementById("subview-mensal").classList.toggle("hidden", subtab !== "mensal");
+      renderHistoricoViews();
     }
 
     function getConfig() {
@@ -605,46 +723,194 @@
       }
     }
 
+    // SUB-ABA 1: Agrupado por produto, ordenado primeiro por nome do produto e depois por preço (menor -> maior)
     function renderPriceComparison(items) {
       const container = document.getElementById("price-comparison");
 
-      const withPrices = items.filter(
-        (item) =>
-          item.pricesByMarket &&
-          Object.keys(item.pricesByMarket).length > 0
-      );
+      // Agrupa por nome normalizado (case-insensitive), preservando nome legível
+      const groupedByProduct = new Map();
 
-      if (withPrices.length === 0) {
+      for (const item of items) {
+        const rawName = String(item.name || "").trim();
+        if (!rawName) continue;
+        const key = rawName.toLowerCase();
+
+        if (!groupedByProduct.has(key)) {
+          groupedByProduct.set(key, {
+            name: rawName,
+            marketPrices: new Map(), // market -> price
+          });
+        }
+
+        const entry = groupedByProduct.get(key);
+
+        if (item.pricesByMarket && typeof item.pricesByMarket === "object") {
+          for (const [m, p] of Object.entries(item.pricesByMarket)) {
+            const mName = String(m || "").trim();
+            const num = Number(p);
+            if (mName && !Number.isNaN(num) && num >= 0) {
+              entry.marketPrices.set(mName, num);
+            }
+          }
+        }
+
+        if (item.lastMarket && item.lastPrice != null) {
+          const mName = String(item.lastMarket).trim();
+          const num = Number(item.lastPrice);
+          if (mName && !Number.isNaN(num) && num >= 0 && !entry.marketPrices.has(mName)) {
+            entry.marketPrices.set(mName, num);
+          }
+        }
+      }
+
+      const productsWithPrices = Array.from(groupedByProduct.values())
+        .filter((p) => p.marketPrices.size > 0)
+        // 1º: ordena por nome do produto (A–Z)
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-PT", { sensitivity: "base" }));
+
+      if (productsWithPrices.length === 0) {
         container.innerHTML = `<div class="item-meta">Ainda não existem preços registados por mercado. Marque um item como comprado para começar.</div>`;
         return;
       }
 
-      container.innerHTML = withPrices
-        .map((item) => {
-          const entries = Object.entries(item.pricesByMarket).map(([m, p]) => [
-            m,
-            Number(p),
-          ]);
-          const minPrice = Math.min(...entries.map(([, p]) => p));
+      container.innerHTML = productsWithPrices
+        .map((prod) => {
+          // 2º: ordena os mercados do produto por preço do menor para o maior
+          const sortedMarkets = Array.from(prod.marketPrices.entries()).sort((a, b) => {
+            if (a[1] !== b[1]) return a[1] - b[1];
+            return a[0].localeCompare(b[0], "pt-PT", { sensitivity: "base" });
+          });
 
-          const chipsHtml = entries
-            .sort((a, b) => a[1] - b[1])
+          const minPrice = sortedMarkets[0][1];
+
+          const chipsHtml = sortedMarkets
             .map(([marketName, priceVal]) => {
-              const isBest = priceVal === minPrice;
-              return `<span class="price-chip ${isBest ? "best" : ""}">${escapeHtml(marketName)}: ${formatMoney(priceVal)}${isBest ? " ★" : ""}</span>`;
+              const isCheapest = priceVal === minPrice;
+              return `<span class="price-chip ${isCheapest ? "best" : ""}">${escapeHtml(marketName)}: ${formatMoney(priceVal)}${isCheapest ? " ★" : ""}</span>`;
             })
             .join("");
 
           return `
             <div class="item">
               <div class="item-info">
-                <div class="item-title">${escapeHtml(item.name)}</div>
+                <div class="item-title">${escapeHtml(prod.name)}</div>
                 <div class="market-prices">${chipsHtml}</div>
               </div>
             </div>
           `;
         })
         .join("");
+    }
+
+    // SUB-ABA 2: Valor total gasto em mercado por mês + Top 3 produtos mais comprados
+    function renderMonthlyMarketSummary(items) {
+      const container = document.getElementById("monthly-market-summary");
+
+      // Chave: `${yearMonth}|||${market}`
+      const buckets = new Map();
+
+      for (const item of items) {
+        const prodName = String(item.name || "").trim();
+        if (!prodName) continue;
+        const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+
+        const records = [];
+        if (Array.isArray(item.history) && item.history.length > 0) {
+          for (const h of item.history) {
+            const price = Number(h?.price);
+            const market = String(h?.market || "").trim();
+            if (market && !Number.isNaN(price) && price >= 0) {
+              const dt = h?.purchasedAt || item.purchasedAt || item.requestedAt || "";
+              records.push({ market, price, dateStr: dt, count: qty });
+            }
+          }
+        } else if (item.lastMarket && item.lastPrice != null) {
+          const price = Number(item.lastPrice);
+          const market = String(item.lastMarket).trim();
+          if (market && !Number.isNaN(price) && price >= 0) {
+            const dt = item.purchasedAt || item.requestedAt || "";
+            records.push({ market, price, dateStr: dt, count: qty });
+          }
+        }
+
+        for (const rec of records) {
+          const parsedDate = rec.dateStr ? new Date(rec.dateStr) : null;
+          const yearMonth =
+            parsedDate && !Number.isNaN(parsedDate.getTime())
+              ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, "0")}`
+              : "Sem data";
+
+          const key = `${yearMonth}|||${rec.market}`;
+          if (!buckets.has(key)) {
+            buckets.set(key, {
+              yearMonth,
+              market: rec.market,
+              totalSpent: 0,
+              productCounts: new Map(),
+            });
+          }
+
+          const bucket = buckets.get(key);
+          // Total gasto no mercado/mês (preço unitário * quantidade)
+          bucket.totalSpent += rec.price * rec.count;
+
+          const pKey = prodName.toLowerCase();
+          const prevProd = bucket.productCounts.get(pKey) || { name: prodName, count: 0 };
+          prevProd.count += rec.count;
+          bucket.productCounts.set(pKey, prevProd);
+        }
+      }
+
+      const list = Array.from(buckets.values()).sort((a, b) => {
+        // Mês mais recente primeiro; dentro do mesmo mês, maior gasto primeiro
+        if (a.yearMonth !== b.yearMonth) {
+          return b.yearMonth.localeCompare(a.yearMonth);
+        }
+        return b.totalSpent - a.totalSpent;
+      });
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="item-meta">Ainda não há compras registadas para calcular gastos mensais por mercado.</div>`;
+        return;
+      }
+
+      container.innerHTML = list
+        .map((b) => {
+          const top3 = Array.from(b.productCounts.values())
+            .sort((x, y) => {
+              if (y.count !== x.count) return y.count - x.count;
+              return x.name.localeCompare(y.name, "pt-PT", { sensitivity: "base" });
+            })
+            .slice(0, 3);
+
+          const top3Text =
+            top3.length > 0
+              ? top3.map((p, idx) => `${idx + 1}º ${escapeHtml(p.name)} (${p.count}x)`).join(" • ")
+              : "Sem produtos registados";
+
+          return `
+            <div class="item">
+              <div class="item-info">
+                <div class="summary-header">
+                  <div class="item-title">
+                    <span>${escapeHtml(formatMonthLabel(b.yearMonth))}</span>
+                    <span class="badge">${escapeHtml(b.market)}</span>
+                  </div>
+                  <div class="summary-total">${formatMoney(b.totalSpent)}</div>
+                </div>
+                <div class="top-products">
+                  <strong>Top 3 mais comprados:</strong> ${top3Text}
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function renderHistoricoViews() {
+      renderPriceComparison(state.items);
+      renderMonthlyMarketSummary(state.items);
     }
 
     function render() {
@@ -705,7 +971,7 @@
               })
               .join("");
 
-      renderPriceComparison(state.items);
+      renderHistoricoViews();
     }
 
     document.addEventListener("click", (e) => {
