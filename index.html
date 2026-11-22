@@ -1,475 +1,726 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lista do Mercado</title>
+  <title>Lista de Mercado & Preços por Mercado</title>
   <style>
     :root {
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --primary: #1b6ef3;
-      --primary-dark: #1354bd;
-      --success: #16a34a;
-      --danger: #dc2626;
-      --text: #111827;
-      --muted: #6b7280;
-      --border: #e5e7eb;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-2: #0b1220;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+      --border: #334155;
     }
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
     header {
-      background: var(--primary);
-      color: #fff;
-      padding: 16px 20px;
       display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
       justify-content: space-between;
       align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      margin-bottom: 18px;
     }
-    header h1 { margin: 0; font-size: 1.2rem; }
-    .icon-btn {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: #fff;
-      padding: 8px 12px;
+
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button, input, select {
       border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .container { max-width: 720px; margin: 16px auto; padding: 0 14px; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab {
-      flex: 1;
-      padding: 10px;
       border: 1px solid var(--border);
-      background: var(--card);
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
+      background: var(--card-2);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.92rem;
     }
-    .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    button {
+      cursor: pointer;
+      background: var(--card);
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #062033;
+      border: none;
+      font-weight: 600;
+    }
+
+    button.btn-check {
+      background: rgba(34, 197, 94, 0.16);
+      border-color: rgba(34, 197, 94, 0.45);
+      color: #86efac;
+    }
+
+    button.btn-uncheck {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #7dd3fc;
+    }
+
+    button.btn-del {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    button.small {
+      padding: 5px 9px;
+      font-size: 0.82rem;
+    }
+
+    .grid-forms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
     .card {
       background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px;
       margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      border: 1px solid var(--border);
     }
-    .card h2 { margin: 0 0 12px; font-size: 1rem; color: var(--text); }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; }
-    input, select {
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-      background: #fff;
-    }
-    input[type="text"] { flex: 2; min-width: 150px; }
-    input[type="number"] { width: 95px; }
-    select { flex: 1; min-width: 150px; }
-    button.primary {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button.primary:hover { background: var(--primary-dark); }
-    button.small {
-      padding: 6px 10px;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-check { background: #dcfce7; color: var(--success); }
-    .btn-uncheck { background: #e0e7ff; color: var(--primary); }
-    .btn-del { background: #fee2e2; color: var(--danger); }
-    .item {
+
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.05rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-      gap: 10px;
     }
-    .item:last-child { border-bottom: none; }
-    .item-info { flex: 1; }
-    .item-title { font-weight: 600; text-transform: capitalize; font-size: 1rem; }
-    .item-meta { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+
+    .row-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row-form input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .item:last-child {
+      border-bottom: none;
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .item-meta {
+      font-size: 0.83rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
     .badge {
-      display: inline-block;
-      background: #eef2ff;
-      color: var(--primary);
-      padding: 2px 8px;
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent);
+      padding: 2px 7px;
       border-radius: 999px;
       font-size: 0.78rem;
-      font-weight: 600;
-      margin-right: 6px;
+      font-weight: 700;
     }
-    .badge.green { background: #dcfce7; color: var(--success); }
-    .hidden { display: none !important; }
+
+    .badge.green {
+      background: rgba(34, 197, 94, 0.18);
+      color: #86efac;
+    }
+
+    .market-prices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .price-chip {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.82rem;
+    }
+
+    .price-chip.best {
+      border-color: var(--accent-2);
+      color: #86efac;
+      font-weight: 600;
+    }
+
+    #status-bar {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+
+    #status-bar.error {
+      color: #fca5a5;
+    }
+
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
-      display: flex;
+      background: rgba(2, 6, 23, 0.75);
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 16px;
       z-index: 50;
     }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
     .modal {
-      background: #fff;
-      border-radius: 14px;
-      padding: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
       width: 100%;
       max-width: 400px;
     }
-    .modal h3 { margin-top: 0; }
-    .field { margin-bottom: 12px; }
-    .field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
-    .field input, .field select { width: 100%; }
-    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-    .stat { background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
-    .stat-label { font-size: 0.8rem; color: var(--muted); }
-    .stat-value { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
+
+    .modal h3 {
+      margin: 0 0 12px 0;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .field input, .field select {
+      width: 100%;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
   </style>
 </head>
 <body>
-
-<header>
-  <h1>🛒 Lista do Mercado</h1>
-  <div style="display:flex; gap:8px;">
-    <button class="icon-btn" onclick="loadData()">↻ Atualizar</button>
-    <button class="icon-btn" onclick="openConfig()">⚙ Config</button>
-  </div>
-</header>
-
-<div class="container">
-  <div class="tabs">
-    <button id="tab-lista" class="tab active" onclick="switchTab('lista')">Lista de Compras</button>
-    <button id="tab-intel" class="tab" onclick="switchTab('intel')">Preços & Inteligência</button>
-  </div>
-
-  <!-- ABA 1: LISTA DE COMPRAS -->
-  <div id="view-lista">
-    <div class="card">
-      <h2>Mercado atual & Novo item</h2>
-      <div class="row" style="margin-bottom: 10px;">
-        <select id="active-market"></select>
-        <button class="small" style="background:#f3f4f6;" onclick="addNewMarket()">+ Mercado</button>
+  <div class="container">
+    <header>
+      <h1>🛒 Lista de Mercado</h1>
+      <div class="toolbar">
+        <button onclick="loadData()">↻ Atualizar</button>
+        <button onclick="openConfig()">⚙ Config</button>
       </div>
-      <div class="row">
-        <input id="new-name" type="text" placeholder="Ex: leite, arroz, café..." />
-        <input id="new-qty" type="number" min="1" value="1" />
-        <button class="primary" onclick="addItem()">Adicionar</button>
+    </header>
+
+    <div id="status-bar">A iniciar...</div>
+
+    <div class="grid-forms">
+      <div class="card" style="margin-bottom: 0;">
+        <h2>Adicionar Item</h2>
+        <form class="row-form" onsubmit="handleAddItem(event)">
+          <input id="new-item-name" type="text" placeholder="Ex.: leite, arroz..." required />
+          <input id="new-item-qty" type="number" min="1" value="1" style="width: 72px; flex: none;" />
+          <button type="submit" class="primary">+ Item</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin-bottom: 0;">
+        <h2>Novo Mercado (para seleção)</h2>
+        <form class="row-form" onsubmit="handleAddMarket(event)">
+          <input id="new-market-name" type="text" placeholder="Ex.: Continente, Mercadona..." required />
+          <button type="submit" class="primary">+ Mercado</button>
+        </form>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Por comprar (<span id="count-unchecked">0</span>)</h2>
+    <div class="card" style="margin-top: 16px;">
+      <h2>
+        <span>Por Comprar</span>
+        <span class="badge" id="count-unchecked">0</span>
+      </h2>
       <div id="list-unchecked"></div>
     </div>
 
     <div class="card">
-      <h2>Comprados (<span id="count-checked">0</span>)</h2>
+      <h2>
+        <span>Comprados</span>
+        <span class="badge green" id="count-checked">0</span>
+      </h2>
       <div id="list-checked"></div>
     </div>
-  </div>
 
-  <!-- ABA 2: INTELIGÊNCIA E HISTÓRICO -->
-  <div id="view-intel" class="hidden">
     <div class="card">
-      <h2>Resumo das Compras Marcadas</h2>
-      <div class="summary-grid">
-        <div class="stat">
-          <div class="stat-label">Total itens marcados</div>
-          <div class="stat-value" id="stat-items">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Valor somado (itens c/ preço)</div>
-          <div class="stat-value" id="stat-total">€ 0,00</div>
-        </div>
+      <h2>📊 Produto × Preço por Mercado</h2>
+      <div class="item-meta" style="margin-bottom: 8px;">
+        Compara o valor registrado de cada produto por mercado. Comprar no mesmo mercado atualiza esse mercado; comprar noutro mantém o anterior e cria o novo.
       </div>
-    </div>
-
-    <div class="card">
-      <h2>Melhor Preço por Produto (Histórico)</h2>
-      <div id="intel-list"></div>
+      <div id="price-comparison"></div>
     </div>
   </div>
-</div>
 
-<!-- MODAL PARA REGISTAR VALOR E MERCADO AO MARCAR -->
-<div id="check-modal" class="modal-backdrop hidden">
-  <div class="modal">
-    <h3 id="modal-item-title">Marcar item como comprado</h3>
-    <div class="field">
-      <label>Mercado</label>
-      <select id="modal-market"></select>
-    </div>
-    <div class="field">
-      <label>Valor (€) — opcional</label>
-      <input id="modal-price" type="number" step="0.01" min="0" placeholder="Ex: 4.89" />
-    </div>
-    <div class="row" style="justify-content: flex-end; margin-top: 16px;">
-      <button class="small" style="background:#f3f4f6;" onclick="closeCheckModal()">Cancelar</button>
-      <button class="primary" onclick="confirmCheckItem()">Confirmar Compra</button>
+  <!-- Modal Marcar Como Comprado -->
+  <div class="modal-backdrop" id="modal-check">
+    <div class="modal">
+      <h3>✓ Marcar como Comprado</h3>
+      <form onsubmit="handleConfirmCheck(event)">
+        <div class="field">
+          <label>Produto</label>
+          <input id="check-item-name" type="text" readonly />
+        </div>
+        <div class="field">
+          <label for="check-market">Mercado</label>
+          <select id="check-market" required></select>
+        </div>
+        <div class="field">
+          <label for="check-price">Valor (€)</label>
+          <input id="check-price" type="number" step="0.01" min="0" placeholder="Ex.: 2.80" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" onclick="closeCheckModal()">Cancelar</button>
+          <button type="submit" class="primary">Guardar Compra</button>
+        </div>
+      </form>
     </div>
   </div>
-</div>
 
-<!-- MODAL DE CONFIGURAÇÃO DA API -->
-<div id="config-modal" class="modal-backdrop hidden">
-  <div class="modal">
-    <h3>Ligação à AWS Lambda</h3>
-    <div class="field">
-      <label>Lambda Function URL</label>
-      <input id="cfg-url" type="text" placeholder="https://xxxx.lambda-url.eu-west-1.on.aws/" />
-    </div>
-    <div class="field">
-      <label>API Key (x-api-key)</label>
-      <input id="cfg-key" type="text" placeholder="mercado2026" />
-    </div>
-    <div class="row" style="justify-content: flex-end; margin-top: 16px;">
-      <button class="small" style="background:#f3f4f6;" onclick="closeConfig()">Fechar</button>
-      <button class="primary" onclick="saveConfig()">Guardar</button>
+  <!-- Modal Configuração -->
+  <div class="modal-backdrop" id="modal-config">
+    <div class="modal">
+      <h3>⚙ Configuração da API</h3>
+      <form onsubmit="handleSaveConfig(event)">
+        <div class="field">
+          <label for="cfg-url">Lambda Function URL</label>
+          <input id="cfg-url" type="url" required />
+        </div>
+        <div class="field">
+          <label for="cfg-key">API Key (x-api-key)</label>
+          <input id="cfg-key" type="text" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" onclick="closeConfig()">Cancelar</button>
+          <button type="submit" class="primary">Guardar</button>
+        </div>
+      </form>
     </div>
   </div>
-</div>
 
-<script>
-  let state = { items: [], markets: [] };
-  let itemBeingChecked = null;
+  <script>
+    const DEFAULT_URL = "https://ejzwybupctozikaeti34it7ozi0kmilc.lambda-url.eu-west-1.on.aws/";
+    const DEFAULT_KEY = "mercad@list2026";
 
-  function getConfig() {
-    return {
-      url: (localStorage.getItem("lm_api_url") || "").replace(/\/$/, ""),
-      key: localStorage.getItem("lm_api_key") || "",
+    let state = {
+      items: [],
+      markets: [],
     };
-  }
 
-  function openConfig() {
-    const cfg = getConfig();
-    document.getElementById("cfg-url").value = cfg.url;
-    document.getElementById("cfg-key").value = cfg.key;
-    document.getElementById("config-modal").classList.remove("hidden");
-  }
-
-  function closeConfig() {
-    document.getElementById("config-modal").classList.add("hidden");
-  }
-
-  function saveConfig() {
-    localStorage.setItem("lm_api_url", document.getElementById("cfg-url").value.trim());
-    localStorage.setItem("lm_api_key", document.getElementById("cfg-key").value.trim());
-    closeConfig();
-    loadData();
-  }
-
-  async function apiCall(method, body = null) {
-    const cfg = getConfig();
-    if (!cfg.url) {
-      openConfig();
-      return null;
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
-    const opts = {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(cfg.key ? { "x-api-key": cfg.key } : {}),
-      },
-    };
-    if (body) opts.body = JSON.stringify(body);
-
-    const res = await fetch(cfg.url, opts);
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || "Erro ao comunicar com a API.");
-      return null;
+    function formatMoney(val) {
+      const n = Number(val);
+      if (Number.isNaN(n)) return "";
+      return n.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
     }
-    state = data;
-    render();
-    return data;
-  }
 
-  async function loadData() {
-    await apiCall("GET");
-  }
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById("status-bar");
+      el.textContent = msg;
+      el.className = isError ? "error" : "";
+    }
 
-  async function addItem() {
-    const nameInput = document.getElementById("new-name");
-    const qtyInput = document.getElementById("new-qty");
-    const name = nameInput.value.trim();
-    const quantity = Number(qtyInput.value) || 1;
-    if (!name) return;
+    function getConfig() {
+      const savedUrl = (localStorage.getItem("lm_api_url") || "").trim();
+      const savedKey = (localStorage.getItem("lm_api_key") || "").trim();
 
-    nameInput.value = "";
-    qtyInput.value = "1";
-    await apiCall("POST", { action: "add_item", name, quantity });
-  }
+      const cleanUrl = (savedUrl || DEFAULT_URL)
+        .replace(/^\[|\]$/g, "")
+        .replace(/\/+$/, "");
 
-  async function addNewMarket() {
-    const market = prompt("Nome do novo mercado:");
-    if (!market || !market.trim()) return;
-    await apiCall("POST", { action: "add_market", market: market.trim() });
-  }
+      return {
+        url: cleanUrl,
+        key: savedKey || DEFAULT_KEY,
+      };
+    }
 
-  function openCheckModal(item) {
-    itemBeingChecked = item;
-    document.getElementById("modal-item-title").textContent = `Comprar: ${item.quantity}x ${item.name}`;
-    const activeMarket = document.getElementById("active-market").value;
-    const modalSelect = document.getElementById("modal-market");
-    modalSelect.innerHTML = state.markets
-      .map((m) => `<option value="${m}" ${m === activeMarket ? "selected" : ""}>${m}</option>`)
-      .join("");
-    document.getElementById("modal-price").value = item.lastPrice ?? "";
-    document.getElementById("check-modal").classList.remove("hidden");
-  }
+    function openConfig() {
+      const cfg = getConfig();
+      document.getElementById("cfg-url").value = `${cfg.url}/`;
+      document.getElementById("cfg-key").value = cfg.key;
+      document.getElementById("modal-config").classList.add("open");
+    }
 
-  function closeCheckModal() {
-    itemBeingChecked = null;
-    document.getElementById("check-modal").classList.add("hidden");
-  }
+    function closeConfig() {
+      document.getElementById("modal-config").classList.remove("open");
+    }
 
-  async function confirmCheckItem() {
-    if (!itemBeingChecked) return;
-    const market = document.getElementById("modal-market").value;
-    const price = document.getElementById("modal-price").value;
-    const name = itemBeingChecked.name;
-    closeCheckModal();
-    await apiCall("POST", { action: "check_item", name, market, price });
-  }
+    function handleSaveConfig(e) {
+      e.preventDefault();
+      const rawUrl = document.getElementById("cfg-url").value.trim().replace(/^\[|\]$/g, "");
+      const rawKey = document.getElementById("cfg-key").value.trim();
+      localStorage.setItem("lm_api_url", rawUrl);
+      localStorage.setItem("lm_api_key", rawKey);
+      closeConfig();
+      loadData();
+    }
 
-  async function uncheckItem(name) {
-    await apiCall("POST", { action: "uncheck_item", name });
-  }
+    async function apiCall(payload = null) {
+      const cfg = getConfig();
+      if (!cfg.url) {
+        throw new Error("URL da API não configurada.");
+      }
 
-  async function deleteItem(name) {
-    if (!confirm(`Excluir "${name}" definitivamente?`)) return;
-    await apiCall("POST", { action: "delete_item", name });
-  }
+      const opts = {
+        method: payload ? "POST" : "GET",
+        headers: {
+          "x-api-key": cfg.key,
+        },
+      };
 
-  function switchTab(tab) {
-    document.getElementById("tab-lista").classList.toggle("active", tab === "lista");
-    document.getElementById("tab-intel").classList.toggle("active", tab === "intel");
-    document.getElementById("view-lista").classList.toggle("hidden", tab !== "lista");
-    document.getElementById("view-intel").classList.toggle("hidden", tab !== "intel");
-  }
+      if (payload) {
+        opts.headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(payload);
+      }
 
-  function formatMoney(val) {
-    if (val === null || val === undefined || isNaN(val)) return "";
-    return `€ ${Number(val).toFixed(2).replace(".", ",")}`;
-  }
+      const res = await fetch(`${cfg.url}/`, opts);
+      const data = await res.json().catch(() => ({}));
 
-  function render() {
-    const activeSelect = document.getElementById("active-market");
-    const prevMarket = activeSelect.value || localStorage.getItem("lm_last_market");
-    activeSelect.innerHTML = (state.markets || [])
-      .map((m) => `<option value="${m}" ${m === prevMarket ? "selected" : ""}>${m}</option>`)
-      .join("");
-    activeSelect.onchange = () => localStorage.setItem("lm_last_market", activeSelect.value);
+      if (!res.ok) {
+        throw new Error(data.error || `Erro HTTP ${res.status}`);
+      }
 
-    const unchecked = (state.items || []).filter((i) => !i.checked);
-    const checked = (state.items || []).filter((i) => i.checked);
+      return data;
+    }
 
-    document.getElementById("count-unchecked").textContent = unchecked.length;
-    document.getElementById("count-checked").textContent = checked.length;
+    async function loadData() {
+      try {
+        setStatus("A carregar dados...");
+        const data = await apiCall(null);
+        state.items = Array.isArray(data.items) ? data.items : [];
+        state.markets = Array.isArray(data.markets) ? data.markets : [];
+        render();
+        setStatus(`Sincronizado (${state.items.length} itens • ${state.markets.length} mercados).`);
+      } catch (err) {
+        setStatus(`Falha ao carregar: ${err.message}`, true);
+      }
+    }
 
-    document.getElementById("list-unchecked").innerHTML =
-      unchecked.length === 0
-        ? `<div class="item-meta">Nenhum item pendente.</div>`
-        : unchecked
-            .map(
-              (item) => `
-          <div class="item">
-            <div class="item-info">
-              <div class="item-title"><span class="badge">${item.quantity}x</span>${item.name}</div>
-              <div class="item-meta">
-                ${item.lastMarket ? `Último: ${item.lastMarket}` : "Sem histórico de mercado"}
-                ${item.lastPrice != null ? ` • ${formatMoney(item.lastPrice)}` : ""}
-              </div>
-            </div>
-            <button class="small btn-check" onclick='openCheckModal(${JSON.stringify(item)})'>✓ Comprar</button>
-            <button class="small btn-del" onclick='deleteItem(${JSON.stringify(item.name)})'>✕</button>
-          </div>`
-            )
+    async function handleAddItem(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById("new-item-name");
+      const qtyInput = document.getElementById("new-item-qty");
+      const name = nameInput.value.trim();
+      const quantity = Number(qtyInput.value) || 1;
+      if (!name) return;
+
+      try {
+        setStatus(`A adicionar "${name}"...`);
+        const data = await apiCall({ action: "add_item", name, quantity });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        nameInput.value = "";
+        qtyInput.value = "1";
+        render();
+        setStatus(`Item "${name}" adicionado.`);
+      } catch (err) {
+        setStatus(`Erro ao adicionar item: ${err.message}`, true);
+      }
+    }
+
+    async function handleAddMarket(e) {
+      e.preventDefault();
+      const input = document.getElementById("new-market-name");
+      const market = input.value.trim();
+      if (!market) return;
+
+      try {
+        setStatus(`A registar mercado "${market}"...`);
+        const data = await apiCall({ action: "add_market", market });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        localStorage.setItem("lm_last_market", market);
+        input.value = "";
+        render();
+        setStatus(`Mercado "${market}" disponível para seleção.`);
+      } catch (err) {
+        setStatus(`Erro ao adicionar mercado: ${err.message}`, true);
+      }
+    }
+
+    function openCheckModal(itemName) {
+      const item = state.items.find((i) => i.name === itemName);
+      document.getElementById("check-item-name").value = itemName;
+
+      const select = document.getElementById("check-market");
+      const markets = state.markets.length ? state.markets : ["Continente", "Mercadona"];
+      const lastUsed =
+        item?.lastMarket || localStorage.getItem("lm_last_market") || markets[0];
+
+      select.innerHTML = markets
+        .map(
+          (m) =>
+            `<option value="${escapeHtml(m)}" ${m === lastUsed ? "selected" : ""}>${escapeHtml(m)}</option>`
+        )
+        .join("");
+
+      const currentMarketPrice = item?.pricesByMarket?.[select.value];
+      document.getElementById("check-price").value =
+        currentMarketPrice != null ? currentMarketPrice : "";
+
+      select.onchange = () => {
+        const p = item?.pricesByMarket?.[select.value];
+        if (p != null) {
+          document.getElementById("check-price").value = p;
+        }
+      };
+
+      document.getElementById("modal-check").classList.add("open");
+      document.getElementById("check-price").focus();
+    }
+
+    function closeCheckModal() {
+      document.getElementById("modal-check").classList.remove("open");
+    }
+
+    async function handleConfirmCheck(e) {
+      e.preventDefault();
+      const name = document.getElementById("check-item-name").value.trim();
+      const market = document.getElementById("check-market").value;
+      const price = Number(document.getElementById("check-price").value);
+
+      if (!name || !market || Number.isNaN(price) || price < 0) return;
+
+      try {
+        setStatus(`A registar compra de "${name}" no ${market}...`);
+        const data = await apiCall({
+          action: "check_item",
+          name,
+          market,
+          price,
+        });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        localStorage.setItem("lm_last_market", market);
+        closeCheckModal();
+        render();
+        setStatus(`"${name}" marcado como comprado (${market}: ${formatMoney(price)}).`);
+      } catch (err) {
+        setStatus(`Erro ao marcar compra: ${err.message}`, true);
+      }
+    }
+
+    async function uncheckItem(name) {
+      try {
+        setStatus(`A reabrir "${name}"...`);
+        const data = await apiCall({ action: "uncheck_item", name });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        render();
+        setStatus(`"${name}" voltou para Por Comprar.`);
+      } catch (err) {
+        setStatus(`Erro ao reabrir item: ${err.message}`, true);
+      }
+    }
+
+    async function deleteItem(name) {
+      try {
+        setStatus(`A remover "${name}"...`);
+        const data = await apiCall({ action: "delete_item", name });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        render();
+        setStatus(`"${name}" removido.`);
+      } catch (err) {
+        setStatus(`Erro ao remover item: ${err.message}`, true);
+      }
+    }
+
+    function renderPriceComparison(items) {
+      const container = document.getElementById("price-comparison");
+
+      const withPrices = items.filter(
+        (item) =>
+          item.pricesByMarket &&
+          Object.keys(item.pricesByMarket).length > 0
+      );
+
+      if (withPrices.length === 0) {
+        container.innerHTML = `<div class="item-meta">Ainda não existem preços registados por mercado. Marque um item como comprado para começar.</div>`;
+        return;
+      }
+
+      container.innerHTML = withPrices
+        .map((item) => {
+          const entries = Object.entries(item.pricesByMarket).map(([m, p]) => [
+            m,
+            Number(p),
+          ]);
+          const minPrice = Math.min(...entries.map(([, p]) => p));
+
+          const chipsHtml = entries
+            .sort((a, b) => a[1] - b[1])
+            .map(([marketName, priceVal]) => {
+              const isBest = priceVal === minPrice;
+              return `<span class="price-chip ${isBest ? "best" : ""}">${escapeHtml(marketName)}: ${formatMoney(priceVal)}${isBest ? " ★" : ""}</span>`;
+            })
             .join("");
 
-    document.getElementById("list-checked").innerHTML =
-      checked.length === 0
-        ? `<div class="item-meta">Nenhum item marcado como comprado.</div>`
-        : checked
-            .map(
-              (item) => `
-          <div class="item">
-            <div class="item-info">
-              <div class="item-title" style="text-decoration:line-through; color:var(--muted);">
-                <span class="badge green">${item.quantity}x</span>${item.name}
-              </div>
-              <div class="item-meta">
-                ${item.lastMarket || "Mercado não informado"}
-                ${item.lastPrice != null ? ` • <strong>${formatMoney(item.lastPrice)}</strong>` : ""}
+          return `
+            <div class="item">
+              <div class="item-info">
+                <div class="item-title">${escapeHtml(item.name)}</div>
+                <div class="market-prices">${chipsHtml}</div>
               </div>
             </div>
-            <button class="small btn-uncheck" onclick='uncheckItem(${JSON.stringify(item.name)})'>↺ Reabrir</button>
-            <button class="small btn-del" onclick='deleteItem(${JSON.stringify(item.name)})'>✕</button>
-          </div>`
-            )
-            .join("");
+          `;
+        })
+        .join("");
+    }
 
-    renderIntelligence(checked);
-  }
+    function render() {
+      const unchecked = state.items.filter((i) => !i.checked);
+      const checked = state.items.filter((i) => i.checked);
 
-  function renderIntelligence(checked) {
-    document.getElementById("stat-items").textContent = checked.length;
-    const total = checked.reduce((acc, i) => acc + (Number(i.lastPrice) || 0), 0);
-    document.getElementById("stat-total").textContent = formatMoney(total);
+      document.getElementById("count-unchecked").textContent = unchecked.length;
+      document.getElementById("count-checked").textContent = checked.length;
 
-    const rows = (state.items || [])
-      .map((item) => {
-        const pricedEntries = (item.history || []).filter(
-          (h) => typeof h.price === "number" && !isNaN(h.price)
-        );
-        if (pricedEntries.length === 0) return null;
+      document.getElementById("list-unchecked").innerHTML =
+        unchecked.length === 0
+          ? `<div class="item-meta">Nenhum item pendente.</div>`
+          : unchecked
+              .map((item) => {
+                const entries = Object.entries(item.pricesByMarket || {});
+                const summary =
+                  entries.length > 0
+                    ? `Preços conhecidos: ${entries.map(([m, p]) => `${m} (${formatMoney(p)})`).join(" • ")}`
+                    : "Sem histórico de preço por mercado";
 
-        const best = pricedEntries.reduce((min, cur) => (cur.price < min.price ? cur : min));
-        const avg = pricedEntries.reduce((s, cur) => s + cur.price, 0) / pricedEntries.length;
+                return `
+                  <div class="item">
+                    <div class="item-info">
+                      <div class="item-title">
+                        <span class="badge">${escapeHtml(item.quantity)}x</span>
+                        <span>${escapeHtml(item.name)}</span>
+                      </div>
+                      <div class="item-meta">${escapeHtml(summary)}</div>
+                    </div>
+                    <button class="small btn-check" data-action="check" data-name="${escapeHtml(item.name)}">✓ Comprar</button>
+                    <button class="small btn-del" data-action="delete" data-name="${escapeHtml(item.name)}">✕</button>
+                  </div>
+                `;
+              })
+              .join("");
 
-        return `
-          <div class="item">
-            <div class="item-info">
-              <div class="item-title">${item.name}</div>
-              <div class="item-meta">
-                Melhor: <strong>${formatMoney(best.price)}</strong> (${best.market || "—"}) •
-                Média: ${formatMoney(avg)} (${pricedEntries.length} registo${pricedEntries.length > 1 ? "s" : ""})
-              </div>
-            </div>
-          </div>`;
-      })
-      .filter(Boolean);
+      document.getElementById("list-checked").innerHTML =
+        checked.length === 0
+          ? `<div class="item-meta">Nenhum item marcado como comprado.</div>`
+          : checked
+              .map((item) => {
+                return `
+                  <div class="item">
+                    <div class="item-info">
+                      <div class="item-title" style="text-decoration:line-through; color:var(--muted);">
+                        <span class="badge green">${escapeHtml(item.quantity)}x</span>
+                        <span>${escapeHtml(item.name)}</span>
+                      </div>
+                      <div class="item-meta">
+                        ${escapeHtml(item.lastMarket || "Mercado não informado")}
+                        ${item.lastPrice != null ? ` • <strong>${formatMoney(item.lastPrice)}</strong>` : ""}
+                      </div>
+                    </div>
+                    <button class="small btn-uncheck" data-action="uncheck" data-name="${escapeHtml(item.name)}">↺ Reabrir</button>
+                    <button class="small btn-del" data-action="delete" data-name="${escapeHtml(item.name)}">✕</button>
+                  </div>
+                `;
+              })
+              .join("");
 
-    document.getElementById("intel-list").innerHTML =
-      rows.length === 0
-        ? `<div class="item-meta">Marque compras informando valor e mercado para ver comparativos aqui.</div>`
-        : rows.join("");
-  }
+      renderPriceComparison(state.items);
+    }
 
-  if (!getConfig().url) {
-    openConfig();
-  } else {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const action = btn.getAttribute("data-action");
+      const name = btn.getAttribute("data-name");
+      if (!name) return;
+
+      if (action === "check") openCheckModal(name);
+      else if (action === "uncheck") uncheckItem(name);
+      else if (action === "delete") deleteItem(name);
+    });
+
     loadData();
-  }
-</script>
+  </script>
 </body>
 </html>
