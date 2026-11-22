@@ -212,6 +212,19 @@
       color: #86efac;
     }
 
+    .best-market-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(34, 197, 94, 0.16);
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      color: #86efac;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
     .market-prices {
       display: flex;
       flex-wrap: wrap;
@@ -483,7 +496,6 @@
     }
 
     function formatMonthLabel(ym) {
-      // ym esperado no formato "YYYY-MM"
       if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "Sem data";
       const [year, month] = ym.split("-");
       const date = new Date(Number(year), Number(month) - 1, 1);
@@ -635,14 +647,72 @@
       }
     }
 
+    // Retorna mapa market -> price para um item
+    function getItemMarketPricesMap(item) {
+      const map = new Map();
+
+      if (item?.pricesByMarket && typeof item.pricesByMarket === "object") {
+        for (const [m, p] of Object.entries(item.pricesByMarket)) {
+          const market = String(m || "").trim();
+          const price = Number(p);
+          if (market && !Number.isNaN(price) && price >= 0) {
+            map.set(market, price);
+          }
+        }
+      }
+
+      if (map.size === 0 && Array.isArray(item?.history)) {
+        for (const h of item.history) {
+          const market = String(h?.market || "").trim();
+          const price = Number(h?.price);
+          if (market && !Number.isNaN(price) && price >= 0) {
+            map.set(market, price);
+          }
+        }
+      }
+
+      if (item?.lastMarket && item?.lastPrice != null) {
+        const market = String(item.lastMarket).trim();
+        const price = Number(item.lastPrice);
+        if (market && !Number.isNaN(price) && price >= 0 && !map.has(market)) {
+          map.set(market, price);
+        }
+      }
+
+      return map;
+    }
+
+    // Descobre o(s) mercado(s) com menor preço conhecido para o item
+    function getBestMarketInfo(item) {
+      const map = getItemMarketPricesMap(item);
+      if (map.size === 0) return null;
+
+      const entries = Array.from(map.entries());
+      const minPrice = Math.min(...entries.map(([, p]) => p));
+      const bestMarkets = entries
+        .filter(([, p]) => p === minPrice)
+        .map(([m]) => m)
+        .sort((a, b) => a.localeCompare(b, "pt-PT", { sensitivity: "base" }));
+
+      return {
+        markets: bestMarkets,
+        minPrice,
+        allEntries: entries.sort((a, b) => a[1] - b[1]),
+      };
+    }
+
     function openCheckModal(itemName) {
       const item = state.items.find((i) => i.name === itemName);
       document.getElementById("check-item-name").value = itemName;
 
       const select = document.getElementById("check-market");
       const markets = state.markets.length ? state.markets : ["Continente", "Mercadona"];
+      const bestInfo = item ? getBestMarketInfo(item) : null;
       const lastUsed =
-        item?.lastMarket || localStorage.getItem("lm_last_market") || markets[0];
+        bestInfo?.markets?.[0] ||
+        item?.lastMarket ||
+        localStorage.getItem("lm_last_market") ||
+        markets[0];
 
       select.innerHTML = markets
         .map(
@@ -726,8 +796,6 @@
     // SUB-ABA 1: Agrupado por produto, ordenado primeiro por nome do produto e depois por preço (menor -> maior)
     function renderPriceComparison(items) {
       const container = document.getElementById("price-comparison");
-
-      // Agrupa por nome normalizado (case-insensitive), preservando nome legível
       const groupedByProduct = new Map();
 
       for (const item of items) {
@@ -738,34 +806,19 @@
         if (!groupedByProduct.has(key)) {
           groupedByProduct.set(key, {
             name: rawName,
-            marketPrices: new Map(), // market -> price
+            marketPrices: new Map(),
           });
         }
 
         const entry = groupedByProduct.get(key);
-
-        if (item.pricesByMarket && typeof item.pricesByMarket === "object") {
-          for (const [m, p] of Object.entries(item.pricesByMarket)) {
-            const mName = String(m || "").trim();
-            const num = Number(p);
-            if (mName && !Number.isNaN(num) && num >= 0) {
-              entry.marketPrices.set(mName, num);
-            }
-          }
-        }
-
-        if (item.lastMarket && item.lastPrice != null) {
-          const mName = String(item.lastMarket).trim();
-          const num = Number(item.lastPrice);
-          if (mName && !Number.isNaN(num) && num >= 0 && !entry.marketPrices.has(mName)) {
-            entry.marketPrices.set(mName, num);
-          }
+        const itemMap = getItemMarketPricesMap(item);
+        for (const [m, p] of itemMap.entries()) {
+          entry.marketPrices.set(m, p);
         }
       }
 
       const productsWithPrices = Array.from(groupedByProduct.values())
         .filter((p) => p.marketPrices.size > 0)
-        // 1º: ordena por nome do produto (A–Z)
         .sort((a, b) => a.name.localeCompare(b.name, "pt-PT", { sensitivity: "base" }));
 
       if (productsWithPrices.length === 0) {
@@ -775,7 +828,6 @@
 
       container.innerHTML = productsWithPrices
         .map((prod) => {
-          // 2º: ordena os mercados do produto por preço do menor para o maior
           const sortedMarkets = Array.from(prod.marketPrices.entries()).sort((a, b) => {
             if (a[1] !== b[1]) return a[1] - b[1];
             return a[0].localeCompare(b[0], "pt-PT", { sensitivity: "base" });
@@ -805,8 +857,6 @@
     // SUB-ABA 2: Valor total gasto em mercado por mês + Top 3 produtos mais comprados
     function renderMonthlyMarketSummary(items) {
       const container = document.getElementById("monthly-market-summary");
-
-      // Chave: `${yearMonth}|||${market}`
       const buckets = new Map();
 
       for (const item of items) {
@@ -851,7 +901,6 @@
           }
 
           const bucket = buckets.get(key);
-          // Total gasto no mercado/mês (preço unitário * quantidade)
           bucket.totalSpent += rec.price * rec.count;
 
           const pKey = prodName.toLowerCase();
@@ -862,7 +911,6 @@
       }
 
       const list = Array.from(buckets.values()).sort((a, b) => {
-        // Mês mais recente primeiro; dentro do mesmo mês, maior gasto primeiro
         if (a.yearMonth !== b.yearMonth) {
           return b.yearMonth.localeCompare(a.yearMonth);
         }
@@ -925,11 +973,14 @@
           ? `<div class="item-meta">Nenhum item pendente.</div>`
           : unchecked
               .map((item) => {
-                const entries = Object.entries(item.pricesByMarket || {});
-                const summary =
-                  entries.length > 0
-                    ? `Preços conhecidos: ${entries.map(([m, p]) => `${m} (${formatMoney(p)})`).join(" • ")}`
-                    : "Sem histórico de preço por mercado";
+                const bestInfo = getBestMarketInfo(item);
+                const bestBadgeHtml = bestInfo
+                  ? `<span class="best-market-badge">★ Ir ao ${escapeHtml(bestInfo.markets.join(" / "))} (${formatMoney(bestInfo.minPrice)})</span>`
+                  : "";
+
+                const summary = bestInfo
+                  ? `Outros registos: ${bestInfo.allEntries.map(([m, p]) => `${m} (${formatMoney(p)})`).join(" • ")}`
+                  : "Sem histórico de preço por mercado";
 
                 return `
                   <div class="item">
@@ -937,6 +988,7 @@
                       <div class="item-title">
                         <span class="badge">${escapeHtml(item.quantity)}x</span>
                         <span>${escapeHtml(item.name)}</span>
+                        ${bestBadgeHtml}
                       </div>
                       <div class="item-meta">${escapeHtml(summary)}</div>
                     </div>
