@@ -766,8 +766,6 @@
       };
     }
 
-    // Calcula mercado sugerido pela maioria dos melhores preços dos itens pendentes
-    // e o valor estimado para toda a lista usando o preço daquele mercado (com fallback para o menor preço conhecido se o item não tiver preço naquele mercado)
     function computeTripSuggestion(uncheckedItems) {
       if (!uncheckedItems || uncheckedItems.length === 0) return null;
 
@@ -800,7 +798,6 @@
         };
       }
 
-      // Calcula o total estimado caso a compra seja feita em cada mercado candidato
       for (const m of candidateTotals.keys()) {
         let totalForMarket = 0;
         for (const info of itemInfos) {
@@ -814,7 +811,6 @@
         candidateTotals.set(m, totalForMarket);
       }
 
-      // Escolhe o mercado com mais itens onde ele é o mais barato; em empate, menor total estimado
       const rankedMarkets = Array.from(winCounts.entries()).sort((a, b) => {
         if (b[1] !== a[1]) return b[1] - a[1];
         const totalA = candidateTotals.get(a[0]) ?? Infinity;
@@ -1159,7 +1155,11 @@
     function renderMarketsConfig() {
       const container = document.getElementById("list-markets");
       const countEl = document.getElementById("count-markets");
-      const markets = Array.isArray(state.markets) ? state.markets : [];
+      const markets = Array.isArray(state.markets)
+        ? [...state.markets].sort((a, b) =>
+            String(a).localeCompare(String(b), "pt-PT", { sensitivity: "base" })
+          )
+        : [];
       countEl.textContent = markets.length;
 
       if (markets.length === 0) {
@@ -1187,8 +1187,13 @@
     }
 
     function render() {
-      const unchecked = state.items.filter((i) => !i.checked);
-      const checked = state.items.filter((i) => i.checked);
+      const compareByName = (a, b) =>
+        String(a.name || "").localeCompare(String(b.name || ""), "pt-PT", {
+          sensitivity: "base",
+        });
+
+      const unchecked = state.items.filter((i) => !i.checked).sort(compareByName);
+      const checked = state.items.filter((i) => i.checked).sort(compareByName);
 
       document.getElementById("count-unchecked").textContent = unchecked.length;
       document.getElementById("count-checked").textContent = checked.length;
