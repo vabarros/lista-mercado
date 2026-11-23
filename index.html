@@ -133,13 +133,6 @@
       flex-wrap: wrap;
     }
 
-    .grid-forms {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -164,6 +157,39 @@
     .row-form input {
       flex: 1;
       min-width: 0;
+    }
+
+    .trip-banner {
+      background: var(--card-2);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .trip-market-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #86efac;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trip-estimate-box {
+      text-align: right;
+    }
+
+    .trip-estimate-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
     }
 
     .item {
@@ -334,6 +360,12 @@
       gap: 8px;
       margin-top: 14px;
     }
+
+    @media (max-width: 600px) {
+      .trip-estimate-box {
+        text-align: left;
+      }
+    }
   </style>
 </head>
 <body>
@@ -342,43 +374,35 @@
       <h1>🛒 Lista de Mercado</h1>
       <div class="toolbar">
         <button onclick="loadData()">↻ Atualizar</button>
-        <button onclick="openConfig()">⚙ Config</button>
+        <button onclick="openConfigModal()">⚙ API</button>
       </div>
     </header>
 
     <div class="main-tabs">
       <button id="tab-lista" class="active-tab" onclick="switchMainTab('lista')">Lista de Compras</button>
       <button id="tab-historico" onclick="switchMainTab('historico')">Histórico / Preço</button>
+      <button id="tab-configuracao" onclick="switchMainTab('configuracao')">Configuração</button>
     </div>
 
     <div id="status-bar">A iniciar...</div>
 
     <!-- ABA 1: LISTA DE COMPRAS -->
     <div id="view-lista">
-      <div class="grid-forms">
-        <div class="card" style="margin-bottom: 0;">
-          <h2>Adicionar Item</h2>
-          <form class="row-form" onsubmit="handleAddItem(event)">
-            <input id="new-item-name" type="text" placeholder="Ex.: leite, arroz..." required />
-            <input id="new-item-qty" type="number" min="1" value="1" style="width: 72px; flex: none;" />
-            <button type="submit" class="primary">+ Item</button>
-          </form>
-        </div>
-
-        <div class="card" style="margin-bottom: 0;">
-          <h2>Novo Mercado (para seleção)</h2>
-          <form class="row-form" onsubmit="handleAddMarket(event)">
-            <input id="new-market-name" type="text" placeholder="Ex.: Continente, Mercadona..." required />
-            <button type="submit" class="primary">+ Mercado</button>
-          </form>
-        </div>
+      <div class="card">
+        <h2>Adicionar Item</h2>
+        <form class="row-form" onsubmit="handleAddItem(event)">
+          <input id="new-item-name" type="text" placeholder="Ex.: leite, arroz..." required />
+          <input id="new-item-qty" type="number" min="1" value="1" style="width: 76px; flex: none;" />
+          <button type="submit" class="primary">+ Item</button>
+        </form>
       </div>
 
-      <div class="card" style="margin-top: 16px;">
+      <div class="card">
         <h2>
           <span>Por Comprar</span>
           <span class="badge" id="count-unchecked">0</span>
         </h2>
+        <div id="trip-suggestion"></div>
         <div id="list-unchecked"></div>
       </div>
 
@@ -402,22 +426,42 @@
         </button>
       </div>
 
-      <!-- SUB-ABA 1: AGRUPADO POR PRODUTO, ORDENADO POR NOME E DEPOIS POR PREÇO (MENOR -> MAIOR) -->
       <div id="subview-produtos" class="card">
         <h2>📊 Preços por Produto (Ordenado por Produto e Menor Preço)</h2>
         <div class="item-meta" style="margin-bottom: 10px;">
-          Agrupado por produto (A–Z) e ordenado do menor para o maior preço por mercado.
+          Valores unitários agrupados por produto (A–Z) e ordenados do menor para o maior preço por mercado.
         </div>
         <div id="price-comparison"></div>
       </div>
 
-      <!-- SUB-ABA 2: VALOR TOTAL GASTO EM MERCADO POR MÊS + TOP 3 PRODUTOS MAIS COMPRADOS -->
       <div id="subview-mensal" class="card hidden">
         <h2>📅 Gastos por Mês & Mercado + Top 3 Produtos</h2>
         <div class="item-meta" style="margin-bottom: 10px;">
-          Valor total gasto por mês e mercado, com os 3 produtos mais comprados em cada registo.
+          Valor total gasto por mês e mercado (preço unitário × quantidade), com os 3 produtos mais comprados.
         </div>
         <div id="monthly-market-summary"></div>
+      </div>
+    </div>
+
+    <!-- ABA 3: CONFIGURAÇÃO -->
+    <div id="view-configuracao" class="hidden">
+      <div class="card">
+        <h2>Novo Mercado</h2>
+        <form class="row-form" onsubmit="handleAddMarket(event)">
+          <input id="new-market-name" type="text" placeholder="Ex.: Continente, Mercadona, Intermarché..." required />
+          <button type="submit" class="primary">+ Mercado</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>
+          <span>Mercados Existentes</span>
+          <span class="badge" id="count-markets">0</span>
+        </h2>
+        <div class="item-meta" style="margin-bottom: 8px;">
+          Gerencie os mercados disponíveis para seleção ao marcar itens como comprados.
+        </div>
+        <div id="list-markets"></div>
       </div>
     </div>
   </div>
@@ -432,12 +476,16 @@
           <input id="check-item-name" type="text" readonly />
         </div>
         <div class="field">
+          <label>Quantidade na lista</label>
+          <input id="check-item-qty" type="text" readonly />
+        </div>
+        <div class="field">
           <label for="check-market">Mercado</label>
           <select id="check-market" required></select>
         </div>
         <div class="field">
-          <label for="check-price">Valor (€)</label>
-          <input id="check-price" type="number" step="0.01" min="0" placeholder="Ex.: 2.80" required />
+          <label for="check-price">Valor unitário (€ — por 1 unidade)</label>
+          <input id="check-price" type="number" step="0.01" min="0" placeholder="Ex.: 0.85" required />
         </div>
         <div class="modal-actions">
           <button type="button" onclick="closeCheckModal()">Cancelar</button>
@@ -447,7 +495,7 @@
     </div>
   </div>
 
-  <!-- Modal Configuração -->
+  <!-- Modal Configuração da API -->
   <div class="modal-backdrop" id="modal-config">
     <div class="modal">
       <h3>⚙ Configuração da API</h3>
@@ -461,7 +509,7 @@
           <input id="cfg-key" type="text" required />
         </div>
         <div class="modal-actions">
-          <button type="button" onclick="closeConfig()">Cancelar</button>
+          <button type="button" onclick="closeConfigModal()">Cancelar</button>
           <button type="submit" class="primary">Guardar</button>
         </div>
       </form>
@@ -513,10 +561,16 @@
       activeMainTab = tab;
       document.getElementById("tab-lista").classList.toggle("active-tab", tab === "lista");
       document.getElementById("tab-historico").classList.toggle("active-tab", tab === "historico");
+      document.getElementById("tab-configuracao").classList.toggle("active-tab", tab === "configuracao");
+
       document.getElementById("view-lista").classList.toggle("hidden", tab !== "lista");
       document.getElementById("view-historico").classList.toggle("hidden", tab !== "historico");
+      document.getElementById("view-configuracao").classList.toggle("hidden", tab !== "configuracao");
+
       if (tab === "historico") {
         renderHistoricoViews();
+      } else if (tab === "configuracao") {
+        renderMarketsConfig();
       }
     }
 
@@ -543,14 +597,14 @@
       };
     }
 
-    function openConfig() {
+    function openConfigModal() {
       const cfg = getConfig();
       document.getElementById("cfg-url").value = `${cfg.url}/`;
       document.getElementById("cfg-key").value = cfg.key;
       document.getElementById("modal-config").classList.add("open");
     }
 
-    function closeConfig() {
+    function closeConfigModal() {
       document.getElementById("modal-config").classList.remove("open");
     }
 
@@ -560,7 +614,7 @@
       const rawKey = document.getElementById("cfg-key").value.trim();
       localStorage.setItem("lm_api_url", rawUrl);
       localStorage.setItem("lm_api_key", rawKey);
-      closeConfig();
+      closeConfigModal();
       loadData();
     }
 
@@ -641,13 +695,25 @@
         localStorage.setItem("lm_last_market", market);
         input.value = "";
         render();
-        setStatus(`Mercado "${market}" disponível para seleção.`);
+        setStatus(`Mercado "${market}" adicionado.`);
       } catch (err) {
         setStatus(`Erro ao adicionar mercado: ${err.message}`, true);
       }
     }
 
-    // Retorna mapa market -> price para um item
+    async function handleRemoveMarket(market) {
+      try {
+        setStatus(`A remover mercado "${market}"...`);
+        const data = await apiCall({ action: "remove_market", market });
+        state.items = data.items || [];
+        state.markets = data.markets || [];
+        render();
+        setStatus(`Mercado "${market}" removido.`);
+      } catch (err) {
+        setStatus(`Erro ao remover mercado: ${err.message}`, true);
+      }
+    }
+
     function getItemMarketPricesMap(item) {
       const map = new Map();
 
@@ -682,7 +748,6 @@
       return map;
     }
 
-    // Descobre o(s) mercado(s) com menor preço conhecido para o item
     function getBestMarketInfo(item) {
       const map = getItemMarketPricesMap(item);
       if (map.size === 0) return null;
@@ -701,9 +766,97 @@
       };
     }
 
+    // Calcula mercado sugerido pela maioria dos melhores preços dos itens pendentes
+    // e o valor estimado para toda a lista usando o preço daquele mercado (com fallback para o menor preço conhecido se o item não tiver preço naquele mercado)
+    function computeTripSuggestion(uncheckedItems) {
+      if (!uncheckedItems || uncheckedItems.length === 0) return null;
+
+      const winCounts = new Map();
+      const candidateTotals = new Map();
+
+      const itemInfos = uncheckedItems.map((item) => {
+        const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+        const map = getItemMarketPricesMap(item);
+        const bestInfo = getBestMarketInfo(item);
+
+        if (bestInfo) {
+          for (const m of bestInfo.markets) {
+            winCounts.set(m, (winCounts.get(m) || 0) + 1);
+            candidateTotals.set(m, 0);
+          }
+        }
+
+        return { item, qty, map, bestInfo };
+      });
+
+      if (winCounts.size === 0) {
+        return {
+          suggestedMarket: null,
+          winCount: 0,
+          totalItems: uncheckedItems.length,
+          pricedItemsCount: 0,
+          estimatedTotal: 0,
+          usedFallbackItemsCount: 0,
+        };
+      }
+
+      // Calcula o total estimado caso a compra seja feita em cada mercado candidato
+      for (const m of candidateTotals.keys()) {
+        let totalForMarket = 0;
+        for (const info of itemInfos) {
+          const unitPrice = info.map.has(m)
+            ? info.map.get(m)
+            : info.bestInfo
+            ? info.bestInfo.minPrice
+            : 0;
+          totalForMarket += unitPrice * info.qty;
+        }
+        candidateTotals.set(m, totalForMarket);
+      }
+
+      // Escolhe o mercado com mais itens onde ele é o mais barato; em empate, menor total estimado
+      const rankedMarkets = Array.from(winCounts.entries()).sort((a, b) => {
+        if (b[1] !== a[1]) return b[1] - a[1];
+        const totalA = candidateTotals.get(a[0]) ?? Infinity;
+        const totalB = candidateTotals.get(b[0]) ?? Infinity;
+        if (totalA !== totalB) return totalA - totalB;
+        return a[0].localeCompare(b[0], "pt-PT", { sensitivity: "base" });
+      });
+
+      const suggestedMarket = rankedMarkets[0][0];
+      const winCount = rankedMarkets[0][1];
+
+      let estimatedTotal = 0;
+      let pricedItemsCount = 0;
+      let usedFallbackItemsCount = 0;
+
+      for (const info of itemInfos) {
+        if (info.map.has(suggestedMarket)) {
+          estimatedTotal += info.map.get(suggestedMarket) * info.qty;
+          pricedItemsCount += 1;
+        } else if (info.bestInfo) {
+          estimatedTotal += info.bestInfo.minPrice * info.qty;
+          pricedItemsCount += 1;
+          usedFallbackItemsCount += 1;
+        }
+      }
+
+      return {
+        suggestedMarket,
+        winCount,
+        totalItems: uncheckedItems.length,
+        pricedItemsCount,
+        estimatedTotal,
+        usedFallbackItemsCount,
+      };
+    }
+
     function openCheckModal(itemName) {
       const item = state.items.find((i) => i.name === itemName);
+      const qty = Number(item?.quantity) > 0 ? Number(item.quantity) : 1;
+
       document.getElementById("check-item-name").value = itemName;
+      document.getElementById("check-item-qty").value = `${qty} un.`;
 
       const select = document.getElementById("check-market");
       const markets = state.markets.length ? state.markets : ["Continente", "Mercadona"];
@@ -761,7 +914,7 @@
         localStorage.setItem("lm_last_market", market);
         closeCheckModal();
         render();
-        setStatus(`"${name}" marcado como comprado (${market}: ${formatMoney(price)}).`);
+        setStatus(`"${name}" marcado como comprado (${market}: ${formatMoney(price)} / un.).`);
       } catch (err) {
         setStatus(`Erro ao marcar compra: ${err.message}`, true);
       }
@@ -793,7 +946,55 @@
       }
     }
 
-    // SUB-ABA 1: Agrupado por produto, ordenado primeiro por nome do produto e depois por preço (menor -> maior)
+    function renderTripSuggestion(uncheckedItems) {
+      const container = document.getElementById("trip-suggestion");
+      const info = computeTripSuggestion(uncheckedItems);
+
+      if (!info) {
+        container.innerHTML = "";
+        return;
+      }
+
+      if (!info.suggestedMarket) {
+        container.innerHTML = `
+          <div class="trip-banner">
+            <div>
+              <div class="item-title">💡 Sugestão de Mercado</div>
+              <div class="item-meta">Ainda não há histórico de preços para os itens pendentes.</div>
+            </div>
+            <div class="trip-estimate-box">
+              <div class="trip-estimate-value">—</div>
+              <div class="item-meta">Valor estimado</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const fallbackNote =
+        info.usedFallbackItemsCount > 0
+          ? ` (${info.usedFallbackItemsCount} ${info.usedFallbackItemsCount === 1 ? "item usa" : "itens usam"} o menor preço histórico de outro mercado)`
+          : "";
+
+      container.innerHTML = `
+        <div class="trip-banner">
+          <div>
+            <div class="trip-market-title">
+              <span>★ Ir ao ${escapeHtml(info.suggestedMarket)}</span>
+              <span class="badge green">${info.winCount} de ${info.totalItems} no menor preço</span>
+            </div>
+            <div class="item-meta">
+              Baseado no histórico unitário dos itens por comprar${escapeHtml(fallbackNote)}.
+            </div>
+          </div>
+          <div class="trip-estimate-box">
+            <div class="trip-estimate-value">${formatMoney(info.estimatedTotal)}</div>
+            <div class="item-meta">Estimativa (${info.pricedItemsCount}/${info.totalItems} com preço)</div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderPriceComparison(items) {
       const container = document.getElementById("price-comparison");
       const groupedByProduct = new Map();
@@ -838,7 +1039,7 @@
           const chipsHtml = sortedMarkets
             .map(([marketName, priceVal]) => {
               const isCheapest = priceVal === minPrice;
-              return `<span class="price-chip ${isCheapest ? "best" : ""}">${escapeHtml(marketName)}: ${formatMoney(priceVal)}${isCheapest ? " ★" : ""}</span>`;
+              return `<span class="price-chip ${isCheapest ? "best" : ""}">${escapeHtml(marketName)}: ${formatMoney(priceVal)}/un.${isCheapest ? " ★" : ""}</span>`;
             })
             .join("");
 
@@ -854,7 +1055,6 @@
         .join("");
     }
 
-    // SUB-ABA 2: Valor total gasto em mercado por mês + Top 3 produtos mais comprados
     function renderMonthlyMarketSummary(items) {
       const container = document.getElementById("monthly-market-summary");
       const buckets = new Map();
@@ -867,19 +1067,19 @@
         const records = [];
         if (Array.isArray(item.history) && item.history.length > 0) {
           for (const h of item.history) {
-            const price = Number(h?.price);
+            const unitPrice = Number(h?.price);
             const market = String(h?.market || "").trim();
-            if (market && !Number.isNaN(price) && price >= 0) {
+            if (market && !Number.isNaN(unitPrice) && unitPrice >= 0) {
               const dt = h?.purchasedAt || item.purchasedAt || item.requestedAt || "";
-              records.push({ market, price, dateStr: dt, count: qty });
+              records.push({ market, unitPrice, dateStr: dt, count: qty });
             }
           }
         } else if (item.lastMarket && item.lastPrice != null) {
-          const price = Number(item.lastPrice);
+          const unitPrice = Number(item.lastPrice);
           const market = String(item.lastMarket).trim();
-          if (market && !Number.isNaN(price) && price >= 0) {
+          if (market && !Number.isNaN(unitPrice) && unitPrice >= 0) {
             const dt = item.purchasedAt || item.requestedAt || "";
-            records.push({ market, price, dateStr: dt, count: qty });
+            records.push({ market, unitPrice, dateStr: dt, count: qty });
           }
         }
 
@@ -901,7 +1101,7 @@
           }
 
           const bucket = buckets.get(key);
-          bucket.totalSpent += rec.price * rec.count;
+          bucket.totalSpent += rec.unitPrice * rec.count;
 
           const pKey = prodName.toLowerCase();
           const prevProd = bucket.productCounts.get(pKey) || { name: prodName, count: 0 };
@@ -956,6 +1156,31 @@
         .join("");
     }
 
+    function renderMarketsConfig() {
+      const container = document.getElementById("list-markets");
+      const countEl = document.getElementById("count-markets");
+      const markets = Array.isArray(state.markets) ? state.markets : [];
+      countEl.textContent = markets.length;
+
+      if (markets.length === 0) {
+        container.innerHTML = `<div class="item-meta">Nenhum mercado registado. Adicione um acima.</div>`;
+        return;
+      }
+
+      container.innerHTML = markets
+        .map(
+          (m) => `
+            <div class="item">
+              <div class="item-info">
+                <div class="item-title">${escapeHtml(m)}</div>
+              </div>
+              <button class="small btn-del" data-action="remove-market" data-market="${escapeHtml(m)}">Excluir</button>
+            </div>
+          `
+        )
+        .join("");
+    }
+
     function renderHistoricoViews() {
       renderPriceComparison(state.items);
       renderMonthlyMarketSummary(state.items);
@@ -968,29 +1193,34 @@
       document.getElementById("count-unchecked").textContent = unchecked.length;
       document.getElementById("count-checked").textContent = checked.length;
 
+      renderTripSuggestion(unchecked);
+
       document.getElementById("list-unchecked").innerHTML =
         unchecked.length === 0
           ? `<div class="item-meta">Nenhum item pendente.</div>`
           : unchecked
               .map((item) => {
+                const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
                 const bestInfo = getBestMarketInfo(item);
+
                 const bestBadgeHtml = bestInfo
-                  ? `<span class="best-market-badge">★ Ir ao ${escapeHtml(bestInfo.markets.join(" / "))} (${formatMoney(bestInfo.minPrice)})</span>`
+                  ? `<span class="best-market-badge">★ ${escapeHtml(bestInfo.markets.join(" / "))} (${formatMoney(bestInfo.minPrice)}/un.)</span>`
                   : "";
 
+                const estimatedLineTotal = bestInfo ? bestInfo.minPrice * qty : null;
                 const summary = bestInfo
-                  ? `Outros registos: ${bestInfo.allEntries.map(([m, p]) => `${m} (${formatMoney(p)})`).join(" • ")}`
+                  ? `Est. menor preço: <strong>${formatMoney(estimatedLineTotal)}</strong> • ${bestInfo.allEntries.map(([m, p]) => `${m}: ${formatMoney(p)}/un.`).join(" • ")}`
                   : "Sem histórico de preço por mercado";
 
                 return `
                   <div class="item">
                     <div class="item-info">
                       <div class="item-title">
-                        <span class="badge">${escapeHtml(item.quantity)}x</span>
+                        <span class="badge">${escapeHtml(qty)}x</span>
                         <span>${escapeHtml(item.name)}</span>
                         ${bestBadgeHtml}
                       </div>
-                      <div class="item-meta">${escapeHtml(summary)}</div>
+                      <div class="item-meta">${summary}</div>
                     </div>
                     <button class="small btn-check" data-action="check" data-name="${escapeHtml(item.name)}">✓ Comprar</button>
                     <button class="small btn-del" data-action="delete" data-name="${escapeHtml(item.name)}">✕</button>
@@ -1004,16 +1234,21 @@
           ? `<div class="item-meta">Nenhum item marcado como comprado.</div>`
           : checked
               .map((item) => {
+                const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+                const unitPrice = item.lastPrice != null ? Number(item.lastPrice) : null;
+                const lineTotal = unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice * qty : null;
+
                 return `
                   <div class="item">
                     <div class="item-info">
                       <div class="item-title" style="text-decoration:line-through; color:var(--muted);">
-                        <span class="badge green">${escapeHtml(item.quantity)}x</span>
+                        <span class="badge green">${escapeHtml(qty)}x</span>
                         <span>${escapeHtml(item.name)}</span>
                       </div>
                       <div class="item-meta">
                         ${escapeHtml(item.lastMarket || "Mercado não informado")}
-                        ${item.lastPrice != null ? ` • <strong>${formatMoney(item.lastPrice)}</strong>` : ""}
+                        ${unitPrice != null ? ` • ${formatMoney(unitPrice)}/un.` : ""}
+                        ${lineTotal != null ? ` • <strong>Total: ${formatMoney(lineTotal)}</strong>` : ""}
                       </div>
                     </div>
                     <button class="small btn-uncheck" data-action="uncheck" data-name="${escapeHtml(item.name)}">↺ Reabrir</button>
@@ -1024,12 +1259,20 @@
               .join("");
 
       renderHistoricoViews();
+      renderMarketsConfig();
     }
 
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action]");
       if (!btn) return;
       const action = btn.getAttribute("data-action");
+
+      if (action === "remove-market") {
+        const market = btn.getAttribute("data-market");
+        if (market) handleRemoveMarket(market);
+        return;
+      }
+
       const name = btn.getAttribute("data-name");
       if (!name) return;
 
