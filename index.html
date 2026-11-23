@@ -169,7 +169,7 @@
       flex-wrap: wrap;
       justify-content: space-between;
       gap: 12px;
-      align-items: center;
+      align-items: flex-start;
     }
 
     .trip-market-title {
@@ -190,6 +190,10 @@
       font-size: 1.15rem;
       font-weight: 700;
       color: var(--accent);
+    }
+
+    .trip-other-markets {
+      margin-top: 4px;
     }
 
     .item {
@@ -770,17 +774,24 @@
       if (!uncheckedItems || uncheckedItems.length === 0) return null;
 
       const winCounts = new Map();
-      const candidateTotals = new Map();
+      const allMarketsSet = new Set(
+        (Array.isArray(state.markets) ? state.markets : [])
+          .map((m) => String(m || "").trim())
+          .filter(Boolean)
+      );
 
       const itemInfos = uncheckedItems.map((item) => {
         const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
         const map = getItemMarketPricesMap(item);
         const bestInfo = getBestMarketInfo(item);
 
+        for (const m of map.keys()) {
+          allMarketsSet.add(m);
+        }
+
         if (bestInfo) {
           for (const m of bestInfo.markets) {
             winCounts.set(m, (winCounts.get(m) || 0) + 1);
-            candidateTotals.set(m, 0);
           }
         }
 
@@ -795,10 +806,12 @@
           pricedItemsCount: 0,
           estimatedTotal: 0,
           usedFallbackItemsCount: 0,
+          otherMarketsTotals: [],
         };
       }
 
-      for (const m of candidateTotals.keys()) {
+      const totalsByMarket = new Map();
+      for (const m of allMarketsSet) {
         let totalForMarket = 0;
         for (const info of itemInfos) {
           const unitPrice = info.map.has(m)
@@ -808,13 +821,13 @@
             : 0;
           totalForMarket += unitPrice * info.qty;
         }
-        candidateTotals.set(m, totalForMarket);
+        totalsByMarket.set(m, totalForMarket);
       }
 
       const rankedMarkets = Array.from(winCounts.entries()).sort((a, b) => {
         if (b[1] !== a[1]) return b[1] - a[1];
-        const totalA = candidateTotals.get(a[0]) ?? Infinity;
-        const totalB = candidateTotals.get(b[0]) ?? Infinity;
+        const totalA = totalsByMarket.get(a[0]) ?? Infinity;
+        const totalB = totalsByMarket.get(b[0]) ?? Infinity;
         if (totalA !== totalB) return totalA - totalB;
         return a[0].localeCompare(b[0], "pt-PT", { sensitivity: "base" });
       });
@@ -837,6 +850,14 @@
         }
       }
 
+      const otherMarketsTotals = Array.from(totalsByMarket.entries())
+        .filter(([m]) => m.toLowerCase() !== suggestedMarket.toLowerCase())
+        .map(([market, total]) => ({ market, total }))
+        .sort((a, b) => {
+          if (a.total !== b.total) return a.total - b.total;
+          return a.market.localeCompare(b.market, "pt-PT", { sensitivity: "base" });
+        });
+
       return {
         suggestedMarket,
         winCount,
@@ -844,6 +865,7 @@
         pricedItemsCount,
         estimatedTotal,
         usedFallbackItemsCount,
+        otherMarketsTotals,
       };
     }
 
@@ -972,9 +994,21 @@
           ? ` (${info.usedFallbackItemsCount} ${info.usedFallbackItemsCount === 1 ? "item usa" : "itens usam"} o menor preço histórico de outro mercado)`
           : "";
 
+      const otherMarketsHtml =
+        info.otherMarketsTotals.length > 0
+          ? `<div class="trip-other-markets">
+              ${info.otherMarketsTotals
+                .map(
+                  (entry) =>
+                    `<div class="item-meta">${escapeHtml(entry.market)} - ${formatMoney(entry.total)}</div>`
+                )
+                .join("")}
+            </div>`
+          : "";
+
       container.innerHTML = `
         <div class="trip-banner">
-          <div>
+          <div style="flex: 1; min-width: 200px;">
             <div class="trip-market-title">
               <span>★ Ir ao ${escapeHtml(info.suggestedMarket)}</span>
               <span class="badge green">${info.winCount} de ${info.totalItems} no menor preço</span>
@@ -986,6 +1020,7 @@
           <div class="trip-estimate-box">
             <div class="trip-estimate-value">${formatMoney(info.estimatedTotal)}</div>
             <div class="item-meta">Estimativa (${info.pricedItemsCount}/${info.totalItems} com preço)</div>
+            ${otherMarketsHtml}
           </div>
         </div>
       `;
