@@ -773,6 +773,7 @@
     function computeTripSuggestion(uncheckedItems) {
       if (!uncheckedItems || uncheckedItems.length === 0) return null;
 
+      const totalItems = uncheckedItems.length;
       const winCounts = new Map();
       const allMarketsSet = new Set(
         (Array.isArray(state.markets) ? state.markets : [])
@@ -802,69 +803,83 @@
         return {
           suggestedMarket: null,
           winCount: 0,
-          totalItems: uncheckedItems.length,
+          totalItems,
           pricedItemsCount: 0,
-          estimatedTotal: 0,
-          usedFallbackItemsCount: 0,
+          hasCompletePrices: false,
+          estimatedTotal: null,
           otherMarketsTotals: [],
         };
       }
 
-      const totalsByMarket = new Map();
+      const marketSummaries = new Map();
+
       for (const m of allMarketsSet) {
         let totalForMarket = 0;
+        let pricedCount = 0;
+
         for (const info of itemInfos) {
-          const unitPrice = info.map.has(m)
-            ? info.map.get(m)
-            : info.bestInfo
-            ? info.bestInfo.minPrice
-            : 0;
-          totalForMarket += unitPrice * info.qty;
+          if (info.map.has(m)) {
+            totalForMarket += info.map.get(m) * info.qty;
+            pricedCount += 1;
+          }
         }
-        totalsByMarket.set(m, totalForMarket);
+
+        const hasCompletePrices = pricedCount === totalItems;
+        marketSummaries.set(m, {
+          market: m,
+          total: hasCompletePrices ? totalForMarket : null,
+          pricedCount,
+          totalItems,
+          hasCompletePrices,
+        });
       }
 
       const rankedMarkets = Array.from(winCounts.entries()).sort((a, b) => {
         if (b[1] !== a[1]) return b[1] - a[1];
-        const totalA = totalsByMarket.get(a[0]) ?? Infinity;
-        const totalB = totalsByMarket.get(b[0]) ?? Infinity;
-        if (totalA !== totalB) return totalA - totalB;
+        const sumA = marketSummaries.get(a[0]);
+        const sumB = marketSummaries.get(b[0]);
+        if (Boolean(sumB?.hasCompletePrices) !== Boolean(sumA?.hasCompletePrices)) {
+          return sumB?.hasCompletePrices ? 1 : -1;
+        }
+        const pricedA = sumA?.pricedCount ?? 0;
+        const pricedB = sumB?.pricedCount ?? 0;
+        if (pricedB !== pricedA) return pricedB - pricedA;
+        if (sumA?.total != null && sumB?.total != null && sumA.total !== sumB.total) {
+          return sumA.total - sumB.total;
+        }
         return a[0].localeCompare(b[0], "pt-PT", { sensitivity: "base" });
       });
 
       const suggestedMarket = rankedMarkets[0][0];
       const winCount = rankedMarkets[0][1];
+      const suggestedSummary = marketSummaries.get(suggestedMarket) || {
+        total: null,
+        pricedCount: 0,
+        totalItems,
+        hasCompletePrices: false,
+      };
 
-      let estimatedTotal = 0;
-      let pricedItemsCount = 0;
-      let usedFallbackItemsCount = 0;
-
-      for (const info of itemInfos) {
-        if (info.map.has(suggestedMarket)) {
-          estimatedTotal += info.map.get(suggestedMarket) * info.qty;
-          pricedItemsCount += 1;
-        } else if (info.bestInfo) {
-          estimatedTotal += info.bestInfo.minPrice * info.qty;
-          pricedItemsCount += 1;
-          usedFallbackItemsCount += 1;
-        }
-      }
-
-      const otherMarketsTotals = Array.from(totalsByMarket.entries())
-        .filter(([m]) => m.toLowerCase() !== suggestedMarket.toLowerCase())
-        .map(([market, total]) => ({ market, total }))
+      const otherMarketsTotals = Array.from(marketSummaries.values())
+        .filter((entry) => entry.market.toLowerCase() !== suggestedMarket.toLowerCase())
         .sort((a, b) => {
-          if (a.total !== b.total) return a.total - b.total;
+          if (a.hasCompletePrices && b.hasCompletePrices) {
+            if (a.total !== b.total) return a.total - b.total;
+            return a.market.localeCompare(b.market, "pt-PT", { sensitivity: "base" });
+          }
+          if (a.hasCompletePrices !== b.hasCompletePrices) {
+            return a.hasCompletePrices ? -1 : 1;
+          }
+          if (b.pricedCount !== a.pricedCount) return b.pricedCount - a.pricedCount;
           return a.market.localeCompare(b.market, "pt-PT", { sensitivity: "base" });
         });
 
       return {
         suggestedMarket,
         winCount,
-        totalItems: uncheckedItems.length,
-        pricedItemsCount,
-        estimatedTotal,
-        usedFallbackItemsCount,
+        totalItems,
+        pricedItemsCount: suggestedSummary.pricedCount,
+        hasCompletePrices: suggestedSummary.hasCompletePrices,
+        estimatedTotal: suggestedSummary.total,
         otherMarketsTotals,
       };
     }
@@ -978,30 +993,31 @@
           <div class="trip-banner">
             <div>
               <div class="item-title">💡 Sugestão de Mercado</div>
-              <div class="item-meta">Ainda não há histórico de preços para os itens pendentes.</div>
+              <div class="item-meta">Um dos itens sem historico de preço.</div>
             </div>
             <div class="trip-estimate-box">
-              <div class="trip-estimate-value">—</div>
-              <div class="item-meta">Valor estimado</div>
+              <div class="item-meta">Um dos itens sem historico de preço.</div>
             </div>
           </div>
         `;
         return;
       }
 
-      const fallbackNote =
-        info.usedFallbackItemsCount > 0
-          ? ` (${info.usedFallbackItemsCount} ${info.usedFallbackItemsCount === 1 ? "item usa" : "itens usam"} o menor preço histórico de outro mercado)`
-          : "";
+      const mainEstimateHtml = info.hasCompletePrices
+        ? `<div class="trip-estimate-value">${formatMoney(info.estimatedTotal)}</div>
+           <div class="item-meta">Estimativa (${info.pricedItemsCount}/${info.totalItems} com preço)</div>`
+        : `<div class="item-meta">Um dos itens sem historico de preço.</div>`;
 
       const otherMarketsHtml =
         info.otherMarketsTotals.length > 0
           ? `<div class="trip-other-markets">
               ${info.otherMarketsTotals
-                .map(
-                  (entry) =>
-                    `<div class="item-meta">${escapeHtml(entry.market)} - ${formatMoney(entry.total)}</div>`
-                )
+                .map((entry) => {
+                  const detail = entry.hasCompletePrices
+                    ? formatMoney(entry.total)
+                    : "Um dos itens sem historico de preço.";
+                  return `<div class="item-meta">${escapeHtml(entry.market)} - ${detail}</div>`;
+                })
                 .join("")}
             </div>`
           : "";
@@ -1014,12 +1030,11 @@
               <span class="badge green">${info.winCount} de ${info.totalItems} no menor preço</span>
             </div>
             <div class="item-meta">
-              Baseado no histórico unitário dos itens por comprar${escapeHtml(fallbackNote)}.
+              Sugestão baseada no histórico unitário dos itens por comprar.
             </div>
           </div>
           <div class="trip-estimate-box">
-            <div class="trip-estimate-value">${formatMoney(info.estimatedTotal)}</div>
-            <div class="item-meta">Estimativa (${info.pricedItemsCount}/${info.totalItems} com preço)</div>
+            ${mainEstimateHtml}
             ${otherMarketsHtml}
           </div>
         </div>
